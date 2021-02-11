@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+require 'pp'
+require "./lib/venue"
+
+venue_path = ENV['VENUE_RC'] || '.venue'
+dotpaths   = ENV['VENUE_DOTFILES'] || (File.exist?(venue_path) && File.read(venue_path)) || ''
+required   = (ENV['VENUE_REQUIRED'] || '').split(/\s*,\s*/)
+normalized = dotpaths.split(/[,\n]+/).select { |fn| File.exist? fn }
+missing    = required - normalized
+raise "Missing required files #{missing.join(', ')}" unless missing.empty?
+
+if normalized.empty?
+  r, e, s = run_cmd('dotenv',*ARGV) 
+  if e&.empty?
+    puts r
+  else
+    STDERR << e
+    exit s.to_i
+  end
+else
+  r, e, s = run_cmd('dotenv', '-f', normalized.join(','), *ARGV)
+  if e&.empty?
+    puts r
+  else
+    STDERR << e
+    exit s.to_i
+  end
+end
+
